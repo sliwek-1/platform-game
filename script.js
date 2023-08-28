@@ -2,19 +2,37 @@ window.addEventListener('DOMContentLoaded', () => {
     let canvas = document.querySelector('.bg');
     let ctx = canvas.getContext('2d');
     let terrainBlockArray = []
+    let bullets = []
 
-    for(let i = 0; i <= 10; i++){
-        let terrain = new Terrain((i * 50), 570,50,50,ctx)
-        terrainBlockArray[i] = terrain
+    for(let i = 0; i <= 20; i++){
+        let terrain = new Terrain((i * 50), 550,50,50,ctx)
+        terrainBlockArray.push(terrain)
     }
 
-    let player = new Player(100,400,50,50,ctx,terrainBlockArray,canvas)
+    for(let j = 0; j <= 20; j++){
+        let terrain = new Terrain((j * 50), 0,50,50,ctx)
+        terrainBlockArray.push(terrain)
+    }
+
+    for(let k = 0; k <= 11; k++){
+        let terrain = new Terrain(0, (k * 50),50,50,ctx)
+        terrainBlockArray.push(terrain)
+    }
+
+    for(let g = 0; g <= 11; g++){
+        let terrain = new Terrain(950, (g * 50),50,50,ctx)
+        terrainBlockArray.push(terrain)
+    }
+
+    let player = new Player(100,400,50,50,ctx,terrainBlockArray,canvas,bullets)
 
     function main(){
         ctx.clearRect(0,0,canvas.width,canvas.height)
         player.draw()
         player.update()
-        player.bulletDraw()
+        bullets.forEach(bullet => {
+            bullet.bulletDraw()
+        })
         terrainBlockArray.forEach(terrain => {
             terrain.draw()
         })
@@ -24,7 +42,7 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 class Player {
-    constructor(x,y,width,height,ctx,terrain,canvas){
+    constructor(x,y,width,height,ctx,terrain,canvas,bullets){
         this.x = x,
         this.y = y,
         this.width = width,
@@ -39,10 +57,8 @@ class Player {
         this.isJumping = false,
         this.isFalling = true,
         this.terrain = terrain,
-        this.bulletX = x,
-        this.bulletY = y,
-        this.bullets = [],
-        this.canvas = canvas
+        this.canvas = canvas,
+        this.bullets = bullets,
 
         this.initControls()
         this.strike()
@@ -73,6 +89,8 @@ class Player {
     }
 
     update(){
+        let isColliding = false
+
         this.x += this.velocityX * this.playerSpeed
         
         if(!this.isJumping && !this.isFalling){
@@ -91,12 +109,28 @@ class Player {
             }
         }   
 
+        let isCollidingX = false;
+
+        for (let i = 0; i < this.terrain.length; i++) {
+            if (this.colisons(this.terrain[i])) {
+                isCollidingX = true;
+
+                if (this.velocityX > 0) {
+                    this.x = this.terrain[i].getCords().x - this.width;
+                } else if (this.velocityX < 0) {
+                    this.x = this.terrain[i].getCords().x + this.terrain[i].getSize().width;
+                }
+    
+                break;
+            }
+        }
+
         if(this.isFalling){
-            let isColliding = false
 
             for(let i = 0;i < this.terrain.length; i++){
                 if(this.colisons(this.terrain[i])){
                     isColliding = true
+                    this.y = this.terrain[i].getCords().y - this.height;
                     break;
                 }
             }
@@ -116,33 +150,17 @@ class Player {
             let mouseY = e.clientY;
             let x = mouseX - this.x;
             let y = mouseY - this.y;
-            let bulletSpeed = 5
-            
+            let bulletSpeed = 1
+                
             let directionRadian = Math.atan2(y,x)
             let direction = directionRadian
 
-            this.bulletX = this.x;
-            this.bulletY = this.y
-
             let bulletVelX = bulletSpeed * Math.cos(direction);
             let bulletVelY = bulletSpeed *  Math.sin(direction);
-            this.bullets.push([bulletVelX,bulletVelY])
-            console.log(this.bullets)
-        })
-        
-    }
+            
+            let bullet = new Bullet(bulletVelX,bulletVelY,this.x,this.y,this.ctx,this.canvas)
 
-    bulletDraw(){
-        this.bullets.forEach(bullet => {
-            this.bulletX += bullet[0]
-            this.bulletY += bullet[1]
-    
-            this.ctx.fillStyle = "red";
-            this.ctx.fillRect(this.bulletX,this.bulletY,10,10)
-
-            if(this.bulletX > this.canvas.width || this.bulletX < 0 || this.bulletY > this.canvas.height || this.bulletY < 0 ){
-                this.bullets.pop(bullet)
-            }
+            this.bullets.push(bullet)
         })
     }
 
@@ -174,6 +192,26 @@ class Player {
         }
 
         return false
+    }
+}
+
+class Bullet {
+    constructor(velX,velY,x,y,ctx,canvas){
+        this.velX = velX,
+        this.velY = velY,
+        this.x = x,
+        this.y = y,
+        this.ctx = ctx,
+        this.canvas = canvas
+    }
+
+    bulletDraw(){
+    
+            this.ctx.fillStyle = "red";
+            this.ctx.fillRect(this.x,this.y,10,10)
+
+            this.x += this.velX;
+            this.y += this.velY; 
     }
 }
 
