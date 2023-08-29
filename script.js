@@ -32,6 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
         player.update()
         bullets.forEach(bullet => {
             bullet.bulletDraw()
+            bullet.update()
         })
         terrainBlockArray.forEach(terrain => {
             terrain.draw()
@@ -150,7 +151,7 @@ class Player {
             let mouseY = e.clientY;
             let x = mouseX - this.x;
             let y = mouseY - this.y;
-            let bulletSpeed = 1
+            let bulletSpeed = 10
                 
             let directionRadian = Math.atan2(y,x)
             let direction = directionRadian
@@ -158,7 +159,7 @@ class Player {
             let bulletVelX = bulletSpeed * Math.cos(direction);
             let bulletVelY = bulletSpeed *  Math.sin(direction);
             
-            let bullet = new Bullet(bulletVelX,bulletVelY,this.x,this.y,this.ctx,this.canvas)
+            let bullet = new Bullet(bulletVelX,bulletVelY,this.x,this.y,this.ctx,this.canvas,this.terrain)
 
             this.bullets.push(bullet)
         })
@@ -196,22 +197,69 @@ class Player {
 }
 
 class Bullet {
-    constructor(velX,velY,x,y,ctx,canvas){
+    constructor(velX,velY,x,y,ctx,canvas,terrain){
         this.velX = velX,
         this.velY = velY,
         this.x = x,
         this.y = y,
         this.ctx = ctx,
-        this.canvas = canvas
+        this.width = 10,
+        this.height = 10,
+        this.canvas = canvas,
+        this.terrain = terrain,
+        this.isFalling = false
+    }
+
+    update(){
+        let isColliding = false;
+        this.x += this.velX;
+        this.y += this.velY; 
+
+        for(let i = 0; i < this.terrain.length; i++){
+            if(this.colisons(this.terrain[i])){
+
+                if (this.velX > 0) {
+                    this.x = this.terrain[i].getCords().x - this.width;
+                } else if (this.velX < 0) {
+                    this.x = this.terrain[i].getCords().x + this.terrain[i].getSize().width;
+                }
+                isColliding = true
+
+                if(this.isColliding){
+                    this.velX = 0;
+                    this.velY = 0;
+                }
+            }
+        }
+
+
+        if(this.isFalling){
+            
+        }
+
     }
 
     bulletDraw(){
-    
             this.ctx.fillStyle = "red";
-            this.ctx.fillRect(this.x,this.y,10,10)
+            this.ctx.fillRect(this.x,this.y,this.width,this.height)
+    }
 
-            this.x += this.velX;
-            this.y += this.velY; 
+    colisons(element){
+        let elementX = element.getCords().x
+        let elementY = element.getCords().y
+        let elementWidth = element.getSize().width
+        let elementHeight = element.getSize().height
+
+        if(
+            this.x < elementX + elementWidth &&
+            this.x + this.width > elementX && 
+            this.y < elementY + elementHeight &&
+            this.y + this.height > elementY
+        ){
+            return true
+        }
+
+        return false
     }
 }
 
